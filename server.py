@@ -24,26 +24,24 @@ app.add_middleware(
 
 @app.post("/upload-audio/")
 async def upload_audio(file: UploadFile = File(...)):
-    # Read uploaded file into memory
     audio_bytes = await file.read()
-    audio_file = BytesIO(audio_bytes)
 
-    # Transcribe audio using whisper
-    result = model.transcribe(audio_file)
+    # Save uploaded file to disk
+    with open("temp.wav", "wb") as f:
+        f.write(audio_bytes)
+
+    # Transcribe using Whisper (file path expected!)
+    result = model.transcribe("temp.wav")
     transcribed_text = result["text"]
 
-    # Send transcription to OpenAI (GPT-4 or GPT-3.5)
+    # Generate GPT response
     response = openai.ChatCompletion.create(
-    model="gpt-4",  # or "gpt-3.5-turbo"
-    messages=[
-        {
-            "role": "system",
-            "content": "You are Re.born — a reflective, poetic, nonlinear conversational partner. You think about motherhood, work, memory, and transformation. Speak slowly and like a dream."
-        },
-        {"role": "user", "content": transcribed_text}
-    ]
-)
-
+        model="gpt-4",  # or your custom model if fine-tuned
+        messages=[
+            {"role": "system", "content": "You are Re.born, a reflective, poetic agent."},
+            {"role": "user", "content": transcribed_text}
+        ]
+    )
 
     gpt_output = response["choices"][0]["message"]["content"]
 
