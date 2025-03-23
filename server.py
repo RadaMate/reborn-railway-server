@@ -34,7 +34,7 @@ async def upload_audio(file: UploadFile = File(...)):
 
     # Send transcription to OpenAI (GPT-4 or GPT-3.5)
     response = openai.ChatCompletion.create(
-        model="gpt-4",
+       model="ft:gpt-3.5-turbo:your-org:reborn:abc123xyz",
         messages=[
             {"role": "system", "content": "You are Re.born, a reflective conversational agent."},
             {"role": "user", "content": transcribed_text}
