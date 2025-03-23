@@ -1,41 +1,41 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-import whisper
+from faster_whisper import WhisperModel
 from openai import OpenAI
 import os
 
-# Initialize FastAPI app
+# Initialize FastAPI
 app = FastAPI()
 
-# Load lightweight Whisper model
-model = whisper.load_model("tiny")
+# Load faster-whisper model (tiny.en for speed)
+whisper_model = WhisperModel("tiny.en", compute_type="int8")  # FP16 not needed on CPU
 
 # OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Allow web access from any origin
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Update with domain for security in production
+    allow_origins=["*"],  # Set your domain for production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 🎙️ Main interaction route – GPT response
+# 🧠 Re.born's main voice
 @app.post("/upload-audio/")
 async def upload_audio(file: UploadFile = File(...)):
     try:
-        audio_bytes = await file.read()
-        with open("temp.wav", "wb") as f:
-            f.write(audio_bytes)
+        audio_path = "temp.wav"
+        with open(audio_path, "wb") as f:
+            f.write(await file.read())
 
-        # Transcribe audio + detect language
-        result = model.transcribe("temp.wav")
-        transcribed_text = result["text"]
-        detected_language = result["language"]
+        # Transcribe + detect language using faster-whisper
+        segments, info = whisper_model.transcribe(audio_path, beam_size=5)
+        transcribed_text = " ".join([segment.text for segment in segments])
+        detected_language = info.language
 
-        # Language-aware poetic system prompt
+        # Re.born's poetic tone
         if detected_language == "bg":
             system_prompt = (
                 "Ти си Re.born – поетична и съзерцателна GPT, родена от преживяванията на майки. "
@@ -51,14 +51,14 @@ async def upload_audio(file: UploadFile = File(...)):
                 "Speak with care, clarity, and a deep awareness of motherhood as both a bloom and a burden."
             )
 
-        # Generate GPT response with tighter max_tokens
         response = client.chat.completions.create(
             model="ft:gpt-3.5-turbo-1106:re-born::BEK8G87T",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": transcribed_text}
             ],
-            max_tokens=120  # keep it quick + poetic
+            max_tokens=120,
+            temperature=0.5
         )
 
         gpt_output = response.choices[0].message.content
@@ -73,18 +73,21 @@ async def upload_audio(file: UploadFile = File(...)):
         print("🔥 ERROR:", e)
         return {"error": str(e)}
 
-# 🛎 Wake word detection-only route
+
+# 🎧 Wake word only transcription
 @app.post("/transcribe/")
 async def transcribe_only(file: UploadFile = File(...)):
     try:
-        audio_bytes = await file.read()
-        with open("temp_trigger.wav", "wb") as f:
-            f.write(audio_bytes)
+        audio_path = "temp_trigger.wav"
+        with open(audio_path, "wb") as f:
+            f.write(await file.read())
 
-        result = model.transcribe("temp_trigger.wav")
+        segments, info = whisper_model.transcribe(audio_path, beam_size=5)
+        transcribed_text = " ".join([segment.text for segment in segments])
+
         return {
-            "language": result["language"],
-            "text": result["text"]
+            "language": info.language,
+            "text": transcribed_text
         }
 
     except Exception as e:
