@@ -3,3 +3,4 @@ uvicorn
 openai-whisper
 openai
 python-multipart
+faster-whisper==0.10.0
