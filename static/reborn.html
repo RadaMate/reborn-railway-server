@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Re.born Listening</title>
+  <title>Re.born is Listening</title>
   <style>
     body {
       background: black;
       color: white;
       font-family: monospace;
       padding: 2rem;
+      max-width: 800px;
+      margin: auto;
     }
     button {
       padding: 1rem;
@@ -17,13 +19,24 @@
       font-weight: bold;
       cursor: pointer;
       font-size: 1.2rem;
+      margin-bottom: 2rem;
+    }
+    #output {
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    #response {
+      font-size: 1.2rem;
+      color: #aaaaff;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 <body>
   <h1>Re.born is Listening</h1>
   <button id="startBtn">Start Listening</button>
-  <div id="output"></div>
+  <div id="output"><strong>You said:</strong><br></div>
+  <div id="response"><strong>Re.born replies:</strong><br></div>
 
   <script>
     const channel = new BroadcastChannel("reborn_hydra_channel");
@@ -37,11 +50,17 @@
     }
 
     function handleTranscript(text) {
-      document.getElementById("output").innerText = text;
       const words = text.trim().split(/\s+/);
+      document.getElementById("output").innerHTML =
+        "<strong>You said:</strong><br>" + text;
       words.forEach((word, i) => {
         setTimeout(() => sendWord(word), i * 250);
       });
+    }
+
+    function showGPTResponse(text) {
+      document.getElementById("response").innerHTML =
+        "<strong>Re.born replies:</strong><br>" + text;
     }
 
     async function startListening() {
@@ -59,14 +78,20 @@
         formData.append('file', blob, 'audio.webm');
 
         try {
-          const response = await fetch("/transcribe", {
+          const response = await fetch("/upload-audio/", {
             method: "POST",
             body: formData
           });
+
           const data = await response.json();
-          handleTranscript(data.text);
+          if (data.transcription) {
+            handleTranscript(data.transcription);
+          }
+          if (data.gpt_output) {
+            showGPTResponse(data.gpt_output);
+          }
         } catch (err) {
-          console.error("Transcription failed:", err);
+          console.error("Upload/transcription failed:", err);
         }
       };
 
