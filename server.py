@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from faster_whisper import WhisperModel
 from openai import OpenAI
 import os
@@ -7,11 +9,8 @@ import os
 # Initialize FastAPI
 app = FastAPI()
 
-# Load faster-whisper model (tiny.en for speed)
-whisper_model = WhisperModel("tiny.en", compute_type="int8")  # FP16 not needed on CPU
-
-# OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Serve static UI (reborn.html)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Enable CORS
 app.add_middleware(
@@ -22,7 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 🧠 Re.born's main voice
+# Load faster-whisper model (tiny.en for speed)
+whisper_model = WhisperModel("tiny.en", compute_type="int8")  # FP16 not needed on CPU
+
+# OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# 🧠 Re.born's main voice (transcribe + GPT)
 @app.post("/upload-audio/")
 async def upload_audio(file: UploadFile = File(...)):
     try:
@@ -74,7 +79,7 @@ async def upload_audio(file: UploadFile = File(...)):
         return {"error": str(e)}
 
 
-# 🎧 Wake word only transcription
+# 🎧 Wake word only transcription (Hydra trigger)
 @app.post("/transcribe/")
 async def transcribe_only(file: UploadFile = File(...)):
     try:
@@ -93,3 +98,9 @@ async def transcribe_only(file: UploadFile = File(...)):
     except Exception as e:
         print("🔥 WAKE WORD ERROR:", e)
         return {"error": str(e)}
+
+
+# 🌐 Optional: Redirect root to the static interface
+@app.get("/")
+async def root():
+    return JSONResponse({"message": "Visit /static/reborn.html to use Re.born."})
