@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Re.born Listening</title>
+  <style>
+    body {
+      background: black;
+      color: white;
+      font-family: monospace;
+      padding: 2rem;
+    }
+    button {
+      padding: 1rem;
+      background: #fff;
+      border: none;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Re.born is Listening</h1>
+  <button id="startBtn">Start Listening</button>
+  <div id="output"></div>
+
+  <script>
+    const channel = new BroadcastChannel("reborn_hydra_channel");
+
+    function awaken() {
+      channel.postMessage({ type: "awaken" });
+    }
+
+    function sendWord(word) {
+      channel.postMessage({ type: "word", word });
+    }
+
+    function handleTranscript(text) {
+      document.getElementById("output").innerText = text;
+      const words = text.trim().split(/\s+/);
+      words.forEach((word, i) => {
+        setTimeout(() => sendWord(word), i * 250);
+      });
+    }
+
+    async function startListening() {
+      awaken();
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      const chunks = [];
+
+      mediaRecorder.ondataavailable = (e) => chunks.push(e.data);
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('file', blob, 'audio.webm');
+
+        try {
+          const response = await fetch("/transcribe", {
+            method: "POST",
+            body: formData
+          });
+          const data = await response.json();
+          handleTranscript(data.text);
+        } catch (err) {
+          console.error("Transcription failed:", err);
+        }
+      };
+
+      mediaRecorder.start();
+      setTimeout(() => mediaRecorder.stop(), 6000);
+    }
+
+    document.getElementById("startBtn").addEventListener("click", startListening);
+  </script>
+</body>
+</html>
