@@ -8,8 +8,6 @@
       color: white;
       font-family: monospace;
       padding: 2rem;
-      max-width: 800px;
-      margin: auto;
     }
     button {
       padding: 1rem;
@@ -23,54 +21,35 @@
     }
     #output {
       font-size: 1rem;
-      margin-bottom: 1rem;
-    }
-    #response {
-      font-size: 1.2rem;
-      color: #aaaaff;
-      white-space: pre-wrap;
+      color: white;
     }
   </style>
 </head>
 <body>
   <h1>Re.born is Listening</h1>
   <button id="startBtn">Start Listening</button>
-  <div id="output"><strong>You said:</strong><br></div>
-  <div id="response"><strong>Re.born replies:</strong><br></div>
+  <div id="output"></div>
 
   <script>
-  const channel = new BroadcastChannel("reborn_hydra_channel");
-
-  function awaken() {
-    channel.postMessage({ type: "awaken" });
-  }
-
-  function sendWord(word) {
-    channel.postMessage({ type: "word", word });
-  }
-</script>
-
+    // ✅ BroadcastChannel setup
+    const channel = new BroadcastChannel("reborn_hydra_channel");
 
     function awaken() {
+      console.log("Sending: awaken");
       channel.postMessage({ type: "awaken" });
     }
 
     function sendWord(word) {
+      console.log("Sending word:", word);
       channel.postMessage({ type: "word", word });
     }
 
     function handleTranscript(text) {
-      const words = text.trim().split(/\s+/);
-      document.getElementById("output").innerHTML =
-        "<strong>You said:</strong><br>" + text;
+      document.getElementById("output").innerText = text;
+      const words = text.trim().split(/\\s+/);
       words.forEach((word, i) => {
-        setTimeout(() => sendWord(word), i * 250);
+        setTimeout(() => sendWord(word), i * 300);
       });
-    }
-
-    function showGPTResponse(text) {
-      document.getElementById("response").innerHTML =
-        "<strong>Re.born replies:</strong><br>" + text;
     }
 
     async function startListening() {
@@ -88,20 +67,15 @@
         formData.append('file', blob, 'audio.webm');
 
         try {
-          const response = await fetch("/upload-audio/", {
+          const response = await fetch("/transcribe", {
             method: "POST",
             body: formData
           });
-
           const data = await response.json();
-          if (data.transcription) {
-            handleTranscript(data.transcription);
-          }
-          if (data.gpt_output) {
-            showGPTResponse(data.gpt_output);
-          }
+          console.log("Transcript:", data);
+          handleTranscript(data.text || data.transcription);
         } catch (err) {
-          console.error("Upload/transcription failed:", err);
+          console.error("Transcription failed:", err);
         }
       };
 
