@@ -39,7 +39,17 @@
   <div id="response"><strong>Re.born replies:</strong><br></div>
 
   <script>
-    const channel = new BroadcastChannel("reborn_hydra_channel");
+  const channel = new BroadcastChannel("reborn_hydra_channel");
+
+  function awaken() {
+    channel.postMessage({ type: "awaken" });
+  }
+
+  function sendWord(word) {
+    channel.postMessage({ type: "word", word });
+  }
+</script>
+
 
     function awaken() {
       channel.postMessage({ type: "awaken" });
