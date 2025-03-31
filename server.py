@@ -1,30 +1,11 @@
-from fastapi import FastAPI, UploadFile, File, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from faster_whisper import WhisperModel
 from openai import OpenAI
 import os
-from typing import List
 
 # Initialize FastAPI
 app = FastAPI()
-
-# WebSocket connection manager
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: dict):
-        for connection in self.active_connections:
-            await connection.send_json(message)
-
-manager = ConnectionManager()
 
 # Load faster-whisper model (tiny.en for speed)
 whisper_model = WhisperModel("tiny.en", compute_type="int8")
@@ -81,11 +62,6 @@ async def upload_audio(file: UploadFile = File(...)):
 
         gpt_output = response.choices[0].message.content
 
-        # Broadcast to Hydra listeners
-        await manager.broadcast({"type": "awaken"})
-        for word in transcribed_text.strip().split():
-            await manager.broadcast({"type": "word", "word": word})
-
         return {
             "language": detected_language,
             "transcription": transcribed_text,
@@ -116,14 +92,3 @@ async def transcribe_only(file: UploadFile = File(...)):
     except Exception as e:
         print("🔥 WAKE WORD ERROR:", e)
         return {"error": str(e)}
-
-
-# 🔌 WebSocket endpoint for visuals
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            await websocket.receive_text()  # keep connection alive
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
