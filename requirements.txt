@@ -4,3 +4,5 @@ openai>=1.30
 openai-whisper>=20231117
 python-osc>=1.8
 numpy>=1.24
+# CPU Torch for Linux (Railway). If build fails, pin a wheel version:
+torch>=2.1
