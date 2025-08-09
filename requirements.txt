@@ -1,6 +1,8 @@
-fastapi
-uvicorn
-openai-whisper
-openai
-python-multipart
-faster-whisper==0.10.0
+fastapi>=0.110
+uvicorn[standard]>=0.29
+openai>=1.30
+openai-whisper>=20231117
+python-osc>=1.8
+numpy>=1.24
+# Torch for Linux (Railway). If you use Apple Silicon locally, install torch via conda/mamba.
+torch>=2.1
