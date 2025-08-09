@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python310", "ffmpeg"]
+nixPkgs = ["ffmpeg"]
 
 [start]
-cmd = "uvicorn server:app --host 0.0.0.0 --port 8000"
+cmd = "uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 65"
