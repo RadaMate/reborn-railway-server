@@ -1,6 +1,5 @@
-fastapi
-uvicorn
-openai-whisper
-openai
-python-multipart
-faster-whisper==0.10.0
+[phases.setup]
+nixPkgs = ["python310", "ffmpeg"]
+
+[start]
+cmd = "uvicorn server:app --host 0.0.0.0 --port 8000"
