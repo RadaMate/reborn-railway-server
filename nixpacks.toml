@@ -1,8 +1,6 @@
-# nixpacks.toml — force Python + ffmpeg to be available during build/run
-[phases.setup]
-# python311 (or python312) and ffmpeg come from nixpkgs
-nixPkgs = ["python311", "ffmpeg"]
-
-[start]
-# your app entry
-cmd = "uvicorn server:app --host 0.0.0.0 --port $PORT --workers 1 --timeout-keep-alive 65"
+fastapi
+uvicorn
+openai-whisper
+openai
+python-multipart
+faster-whisper==0.10.0
